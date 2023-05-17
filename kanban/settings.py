@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+from django.conf import settings
+from datetime import timedelta
 from pathlib import Path
 from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,8 +40,22 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core'
+    'core',
+    'users',
+
+    # Third party apps
+    'rest_framework',
+    'corsheaders',
+    'drf_yasg',
 ]
+
+
+REST_FRAMEWORK = {
+'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -105,6 +120,29 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),#specifies how long access tokens are valid
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),#specifies how long refresh tokens are valid
+    'ROTATE_REFRESH_TOKENS': False,#When set to True, if a refresh token is submitted to the TokenRefreshView, a new refresh token will be returned along with the new access token
+    'BLACKLIST_AFTER_ROTATION': True,#When set to True, causes refresh tokens submitted to the TokenRefreshView to be added to the blacklist if the blacklist app is in use and the ROTATE_REFRESH_TOKENS setting is set to True
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': settings.SECRET_KEY,
+    'VERIFYING_KEY': None,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=60),#specifies how long sliding tokens are valid to prove authentication after token generation.
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),#specifies how long sliding tokens are valid to be refreshed
+}
 
 
 # Internationalization

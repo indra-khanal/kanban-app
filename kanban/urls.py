@@ -19,7 +19,29 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+API_TITLE = 'KanBan App API Documentations' # new
+API_DESCRIPTION = 'REST API for kanban'
+# schema_view = get_schema_view(title=API_TITLE)
+
+schema_view = get_schema_view(
+   openapi.Info(
+      title="Kanban App API Documentations",
+      default_version='v1',
+      description="REST API v1",
+      contact=openapi.Contact(email="indra.khanal@cotiviti.com"),
+      license=openapi.License(name="GNU License"),
+      terms_of_service="http://65.0.18.97/swagger/policies/terms/",
+   ),
+   public=True,
+   permission_classes=(permissions.AllowAny,),
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
+    path('', include('users.urls')),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]
