@@ -9,7 +9,6 @@ from rest_framework import status
 
 
 class StatusView(viewsets.ModelViewSet):
-    fields = '__all__'
     serializer_class =  StatusSerializers
     queryset = Status.objects.all()
     permission_classes = (IsAuthenticated,)

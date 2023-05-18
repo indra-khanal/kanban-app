@@ -4,9 +4,11 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer as JwtTokenObtainPairSerializer
-from .utils import validate_email_address
-from django.contrib.auth import login
+from .utils import validate_email_address, AuthenticationFailed
+from django.contrib.auth import authenticate
 User = get_user_model()
+from django.utils.translation import gettext_lazy as _
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -40,12 +42,30 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class TokenObtainPairSerializer(JwtTokenObtainPairSerializer):
+    default_error_message = {
+        "no_active_account":_('No active account found with the given credentials'),
+    }
     username_field = get_user_model().EMAIL_FIELD
     def validate(self, attrs):
-        data = super().validate(attrs)
-        refresh = self.get_token(self.user)
-        data['refresh_token'] = str(refresh)
-        data['access_token'] = str(refresh.access_token)
-        data['id'] = self.user.id
-        data['email'] = self.user.email
-        return data
+        authenticate_kwargs = {
+            self.username_field: attrs[self.username_field],
+            "password":attrs["password"]
+        }
+        try:
+            authenticate_kwargs["request"] = self.context["request"]
+        except KeyError as k:
+            pass
+        self.user  = authenticate(**authenticate_kwargs)
+        if not self.user:
+            raise AuthenticationFailed(
+                self.default_error_message["no_active_account"],
+                "no_active_account"
+            )
+        else:
+            data = super().validate(attrs)
+            refresh = self.get_token(self.user)
+            data['refresh'] = str(refresh)
+            data['access'] = str(refresh.access_token)
+            data['id'] = self.user.id
+            data['email'] = self.user.email
+            return data

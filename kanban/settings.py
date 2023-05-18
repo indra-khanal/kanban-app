@@ -101,7 +101,7 @@ DATABASES = {
             'PORT': PORT,
     }
 }
-
+AUTHENTICATION_BACKENDS = ["users.auth_email.EmailBackend"]
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
