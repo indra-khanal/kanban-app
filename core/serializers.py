@@ -5,16 +5,19 @@ User = get_user_model()
 
 class BoardSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
+    board_member = serializers.PrimaryKeyRelatedField(read_only = True, many=True)
     created_at  = serializers.DateTimeField(read_only = True)
     
     class Meta:
         model = KanBanBoard
-        fields = ["id", "name", "user", "created_at"]
+        fields = ["id", "name", "user","board_member", "created_at"]
         
     def create(self, validate_data):
-        user = self.context["request"].user.id
-        validate_data["user"] = User.objects.get(id=user)
-        return KanBanBoard.objects.create(**validate_data)
+        user = User.objects.get(id = self.context["request"].user.id)
+        validate_data["user"] = user
+        obj =  KanBanBoard.objects.create(**validate_data)
+        obj.board_member.add(user)
+        return obj
 
     
 
@@ -50,8 +53,20 @@ class CardSerializers(serializers.ModelSerializer):
         
         
 class LaneSerializer(serializers.ModelSerializer):
-    created_at  = serializers.DateField(read_only = True)
+    created_at  = serializers.DateTimeField(read_only = True)
     
     class Meta:
         model= Lane
         fields = ["id", "name","board", "display_order", "created_at"]
+        
+        
+class CommentSerializer(serializers.ModelSerializer):
+    created_at  = serializers.DateTimeField(read_only = True)
+    
+    
+    class Meta:
+        model = Comment
+        fields = ["id", "text", "author","card", "created_at"]
+        
+
+    

@@ -5,6 +5,7 @@ from django.conf import settings
 class KanBanBoard(models.Model):
     name = models.CharField(max_length=50)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="board_user")
+    board_member = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="board_member")
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         ordering = ["-id"]
