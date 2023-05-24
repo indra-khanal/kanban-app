@@ -4,13 +4,13 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class BoardSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    user_email = serializers.CharField(source='user.email',read_only=True)
     board_member = serializers.PrimaryKeyRelatedField(read_only = True, many=True)
     created_at  = serializers.DateTimeField(read_only = True)
     
     class Meta:
         model = KanBanBoard
-        fields = ["id", "name", "user","board_member", "created_at"]
+        fields = ["id", "name", "user","board_member", "created_at",'user_email']
         
     def create(self, validate_data):
         user = User.objects.get(id = self.context["request"].user.id)
@@ -22,7 +22,7 @@ class BoardSerializer(serializers.ModelSerializer):
     
 
 class TagSerializer(serializers.ModelSerializer):
-    board = serializers.PrimaryKeyRelatedField(queryset=KanBanBoard.objects.none())
+    board = serializers.PrimaryKeyRelatedField(queryset=KanBanBoard.objects.all())
     created_at  = serializers.DateTimeField(read_only = True)
 
     def __init__(self, *args, **kwargs):
@@ -49,8 +49,52 @@ class CardSerializers(serializers.ModelSerializer):
     created_at  = serializers.DateTimeField(read_only = True)
     class Meta:
         model = Card
-        fields = ["id", "title", "description", "display_order", "lane", "tags", "card_users", "created_at"]
+        fields = ["id", "title","display_order", "description", "lane", "tags", "card_users", "created_at"]
+    
+    def get_fields(self):
+        fields = super().get_fields()
+        if self.context['view'].action == 'create':
+            del fields['display_order']
+        return fields
+    
+    
+    def create(self, validated_data):
+        last_obj = Card.objects.last()
+        if last_obj:
+            validated_data["display_order"] = last_obj.display_order+1
+        else:
+            validated_data["display_order"]  = 1
+        return super().create(validated_data)
+    
+    
+    # def update(self, instance, validated_data):
+    #     previous_order = instance.display_order 
+    #     current_order = validated_data.get("display_order")
         
+    #     previous_lane_id = instance.lane.id
+    #     current_lane_id = validated_data["lane"]
+        
+    #     if previous_lane_id!=current_lane_id and validated_data.get("lane"):
+    #         instance = sort_lane_display(
+    #             instance, previous_lane_id, current_lane_id, current_order, validated_data
+    #             )
+            
+        
+    #     if previous_order>current_order and validated_data.get("display_order"):
+    #         instance = sort_card_display(
+    #             instance, previous_lane_id, current_lane_id, current_order, validated_data
+                
+    #         )
+    #     elif previous_order<current_order and validated_data.get("display_order"):
+    #         instance = sort_card_display(
+    #             instance, previous_lane_id, current_lane_id, current_order, validated_data
+                
+    #         )
+    #     return instance
+
+            
+            
+    
         
 class LaneSerializer(serializers.ModelSerializer):
     created_at  = serializers.DateTimeField(read_only = True)
@@ -58,6 +102,15 @@ class LaneSerializer(serializers.ModelSerializer):
     class Meta:
         model= Lane
         fields = ["id", "name","board", "display_order", "created_at"]
+        
+    def create(self, validate_data):
+        last_obj = Lane.objects.last()
+        if last_obj:
+            validate_data["display_order"] = last_obj.display_order+1
+        else:
+            validate_data["display_order"] = 1
+        return super().create(validate_data)
+
         
         
 class CommentSerializer(serializers.ModelSerializer):

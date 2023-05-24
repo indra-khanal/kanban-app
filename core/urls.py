@@ -1,5 +1,12 @@
 from django.urls import path, include
-from .views import BoardView, TagView, LaneView,CardView, CommentView, InviteMember, RemoveMember, SearchUser
+from .views import (BoardView,
+                    TagView, 
+                    LaneView,
+                    CardView, 
+                    CommentView, 
+                    InviteMember, 
+                    RemoveMember, 
+                    SearchUser, )
 app_name = 'core'
 from rest_framework import routers
 router = routers.DefaultRouter()
@@ -18,4 +25,6 @@ urlpatterns = [
     path('api/member/invite/<int:pk>/', InviteMember.as_view(), name="invite-member"),
     path('api/member/remove/<int:pk>/', RemoveMember.as_view(), name="remove-member"),
     path('api/member/search/', SearchUser.as_view(), name="search-member"),
+    # 
+    
 ]

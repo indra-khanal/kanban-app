@@ -4,9 +4,8 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer as JwtTokenObtainPairSerializer
-from .utils import validate_email_address, AuthenticationFailed
+from .utils import validate_email_address, AuthenticationFailed, get_username
 from django.contrib.auth import authenticate
-User = get_user_model()
 from django.utils.translation import gettext_lazy as _
 
 
@@ -34,7 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create(
             email=validated_data['email'],
-            username = validated_data["email"]
+            username=get_username(validated_data["email"])
         )
         user.set_password(validated_data['password'])
         user.save()
