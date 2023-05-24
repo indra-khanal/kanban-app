@@ -3,6 +3,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+
 class BoardSerializer(serializers.ModelSerializer):
     user_email = serializers.CharField(source='user.email',read_only=True)
     board_member = serializers.PrimaryKeyRelatedField(read_only = True, many=True)
@@ -19,7 +20,6 @@ class BoardSerializer(serializers.ModelSerializer):
         obj.board_member.add(user)
         return obj
 
-    
 
 class TagSerializer(serializers.ModelSerializer):
     board = serializers.PrimaryKeyRelatedField(queryset=KanBanBoard.objects.all())
@@ -31,11 +31,9 @@ class TagSerializer(serializers.ModelSerializer):
         if user_id is not None:
             self.board = serializers.PrimaryKeyRelatedField(queryset=KanBanBoard.objects.filter(user__id=user_id))
             
-            
     class Meta:
         model= Tags
         fields = ["id", "name","board", "created_at"]
-        
         
         
 class CardSerializers(serializers.ModelSerializer):
@@ -47,6 +45,7 @@ class CardSerializers(serializers.ModelSerializer):
         queryset=User.objects.all(), many=True, required=False
     )
     created_at  = serializers.DateTimeField(read_only = True)
+    
     class Meta:
         model = Card
         fields = ["id", "title","display_order", "description", "lane", "tags", "card_users", "created_at"]
@@ -57,6 +56,10 @@ class CardSerializers(serializers.ModelSerializer):
             del fields['display_order']
         return fields
     
+    def validate(self, attr):
+        if not Card.objects.filter(lane__board__board_member__id = self.context["request"].user.id):
+            raise serializers.ValidationError("You are not allowed to create data on this board.")
+        return super().validate(attr)
     
     def create(self, validated_data):
         last_obj = Card.objects.last()
@@ -67,41 +70,17 @@ class CardSerializers(serializers.ModelSerializer):
         return super().create(validated_data)
     
     
-    # def update(self, instance, validated_data):
-    #     previous_order = instance.display_order 
-    #     current_order = validated_data.get("display_order")
-        
-    #     previous_lane_id = instance.lane.id
-    #     current_lane_id = validated_data["lane"]
-        
-    #     if previous_lane_id!=current_lane_id and validated_data.get("lane"):
-    #         instance = sort_lane_display(
-    #             instance, previous_lane_id, current_lane_id, current_order, validated_data
-    #             )
-            
-        
-    #     if previous_order>current_order and validated_data.get("display_order"):
-    #         instance = sort_card_display(
-    #             instance, previous_lane_id, current_lane_id, current_order, validated_data
-                
-    #         )
-    #     elif previous_order<current_order and validated_data.get("display_order"):
-    #         instance = sort_card_display(
-    #             instance, previous_lane_id, current_lane_id, current_order, validated_data
-                
-    #         )
-    #     return instance
-
-            
-            
-    
-        
 class LaneSerializer(serializers.ModelSerializer):
     created_at  = serializers.DateTimeField(read_only = True)
     
     class Meta:
         model= Lane
         fields = ["id", "name","board", "display_order", "created_at"]
+        
+    def validate(self, attr):
+        if not Lane.objects.filter(board__board_member__id = self.context["request"].user.id).exists():
+            raise serializers.ValidationError("You are not allowed to do action in this board")
+        return super().validate(attr)
         
     def create(self, validate_data):
         last_obj = Lane.objects.last()
@@ -110,16 +89,11 @@ class LaneSerializer(serializers.ModelSerializer):
         else:
             validate_data["display_order"] = 1
         return super().create(validate_data)
-
         
         
 class CommentSerializer(serializers.ModelSerializer):
     created_at  = serializers.DateTimeField(read_only = True)
     
-    
     class Meta:
         model = Comment
         fields = ["id", "text", "author","card", "created_at"]
-        
-
-    

@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from users.permission import IsAdminUser, IsBoardOwner
 User = get_user_model()
 
 
@@ -25,9 +26,19 @@ class BoardView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['name']
+
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action == 'list' or self.action == 'create' or self.action == 'retrieve':
+            permission_classes = [IsAuthenticated, IsAdminUser]
+        else:
+            permission_classes = [IsAdminUser, IsAuthenticated, IsBoardOwner]
+        return [permission() for permission in permission_classes]
     
     def get_queryset(self, *args, **kwargs):
-	    return KanBanBoard.objects.filter(user__id = self.request.user.id)
+	    return KanBanBoard.objects.filter(board_member__id = self.request.user.id)
  
     def retrieve(self, request, *args, **kwargs):
         board = KanBanBoard.objects.get(id = kwargs.get("pk"))
@@ -50,7 +61,6 @@ class BoardView(viewsets.ModelViewSet):
         return Response(board_serializer_data)
         
  
-    
 class InviteMember(APIView):
     """
     API for invite a new member to the individual board.
@@ -61,7 +71,7 @@ class InviteMember(APIView):
         
         OR email can be send from form data.
     """
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsBoardOwner,)
 
     def post(self, request, *args, **kwargs):
        
@@ -89,7 +99,7 @@ class RemoveMember(APIView):
         
         OR email can be send from form data.
     """
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdminUser, IsBoardOwner)
 
     def post(self, request, *args, **kwargs):
         email = self.request.POST.get("email", None)
@@ -104,7 +114,6 @@ class RemoveMember(APIView):
                 return Response(data=f"No users found with {email}", status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(data="Please Provide an email.", status=status.HTTP_400_BAD_REQUEST)
-            
             
             
 class SearchUser(APIView):
@@ -140,17 +149,26 @@ class TagView(viewsets.ModelViewSet):
     filterset_fields = ['name']
     
     def get_queryset(self, *args, **kwargs):
-	    return Tags.objects.filter(board__user__id = self.request.user.id)
+	    return Tags.objects.filter(board__board_member__id = self.request.user.id)
     
     
 class LaneView(viewsets.ModelViewSet):
     serializer_class =  LaneSerializer
-    permission_classes = (IsAuthenticated,)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['name', 'display_order']
     
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action == 'list' or self.action == 'create' or self.action == 'retrieve':
+            permission_classes = [IsAuthenticated, IsAdminUser]
+        else:
+            permission_classes = [IsAdminUser, IsAuthenticated, IsBoardOwner]
+        return [permission() for permission in permission_classes]
+    
     def get_queryset(self, *args, **kwargs):
-	    return Lane.objects.filter(board__user__id = self.request.user.id)
+	    return Lane.objects.filter(board__board_member__id = self.request.user.id)
  
     def retrieve(self, request, *args, **kwargs):
         lane = get_object_or_404(Lane, id=kwargs.get("pk"))
@@ -161,7 +179,6 @@ class LaneView(viewsets.ModelViewSet):
         cards = Card.objects.filter(lane__id=kwargs.get("pk")).values()
         lane_serializer_data["cards"] = list(cards)
         return Response(lane_serializer_data)
-        
  
  
 class CardView(viewsets.ModelViewSet):
@@ -172,12 +189,21 @@ class CardView(viewsets.ModelViewSet):
     """
     serializer_class =  CardSerializers
     queryset = Card.objects.all()
-    permission_classes = (IsAuthenticated,)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['display_order']
     
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action == 'list' or self.action == 'create' or self.action == 'retrieve' or self.action == 'update':
+            permission_classes = [IsAuthenticated, IsAdminUser]
+        else:
+            permission_classes = [IsAdminUser, IsAuthenticated, IsBoardOwner]
+        return [permission() for permission in permission_classes]
+    
     def get_queryset(self, *args, **kwargs):
-        return super().get_queryset().filter(lane__board__user__id = self.request.user.id)
+        return super().get_queryset().filter(lane__board__board_member__id = self.request.user.id)
  
     def retrieve(self, request, *args, **kwargs):
         card = get_object_or_404(Card, id=kwargs.get("pk"))
@@ -199,7 +225,7 @@ class CardView(viewsets.ModelViewSet):
 
 class CommentView(viewsets.ModelViewSet):
     serializer_class =  CommentSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdminUser)
     
     def get_queryset(self, *args, **kwargs):
 	    return Comment.objects.filter(card__lane__board__user__id = self.request.user.id)
