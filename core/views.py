@@ -51,12 +51,11 @@ class BoardView(viewsets.ModelViewSet):
         lane = Lane.objects.filter(board__id = kwargs.get("pk")).values()
         cards = Card.objects.filter(lane__board__id = kwargs.get("pk")).values()
         tags = Tags.objects.filter(board__id = kwargs.get("pk")).values()
-        
         board_serializer_data["lane"]=list(lane)
         board_serializer_data["cards"]=list(cards)
         board_serializer_data["tags"]=list(tags)
         return Response(board_serializer_data)
-        
+
  
 class InviteMember(APIView):
     """
@@ -219,4 +218,9 @@ class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, IsAdminUser)
     
     def get_queryset(self, *args, **kwargs):
-	    return Comment.objects.filter(card__lane__board__user__id = self.request.user.id)
+	    return Comment.objects.filter(card__lane__board__board_member = self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        if self.request.user != self.get_object().author:
+            return Response(data={"message":"you cannot delete this commnet"}, status=status.HTTP_400_BAD_REQUEST)
+        return super().destroy(request, *args, **kwargs)
