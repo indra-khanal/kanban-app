@@ -2,6 +2,7 @@ from .models import *
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 User = get_user_model()
+from rest_framework.exceptions import AuthenticationFailed
 
 
 class BoardSerializer(serializers.ModelSerializer):
@@ -58,7 +59,7 @@ class CardSerializers(serializers.ModelSerializer):
     
     def validate(self, attr):
         if not Card.objects.filter(lane__board__board_member__id = self.context["request"].user.id):
-            raise serializers.ValidationError("You are not allowed to create data on this board.")
+            raise AuthenticationFailed("You are not allowed to create data on this board.")
         return super().validate(attr)
     
     def create(self, validated_data):
@@ -79,7 +80,7 @@ class LaneSerializer(serializers.ModelSerializer):
         
     def validate(self, attr):
         if not Lane.objects.filter(board__board_member__id = self.context["request"].user.id).exists():
-            raise serializers.ValidationError("You are not allowed to do action in this board")
+            raise AuthenticationFailed("You are not allowed to do action in this board")
         return super().validate(attr)
         
     def create(self, validate_data):

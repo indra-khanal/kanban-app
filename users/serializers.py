@@ -9,7 +9,6 @@ from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
 
 
-
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
             required=True,
@@ -21,7 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('password', 'password2', 'email')
-     
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -68,3 +66,30 @@ class TokenObtainPairSerializer(JwtTokenObtainPairSerializer):
             data['id'] = self.user.id
             data['email'] = self.user.email
             return data
+        
+class SessionSerializer(serializers.ModelSerializer):
+    # email = serializers.EmailField(required=True)
+    # password = serializers.CharField(required = True, write_only=True)
+    
+    class Meta:
+        model =  User
+        fields = ("email", "password")
+    
+    def validate(self, data):
+        email = data.get('email')
+        password = data.get('password')
+
+        # Validate the username and password
+        if not email or not password:
+            raise serializers.ValidationError('Please provide both username and password')
+
+        # Authenticate the user
+        user = authenticate(email=email, password=password)
+        if not user:
+            raise serializers.ValidationError('Invalid username or password')
+
+        # Set the authenticated user
+        data['user'] = user
+        return data
+
+    

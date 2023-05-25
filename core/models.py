@@ -95,6 +95,13 @@ class Card(models.Model):
                     for card in cards_in_lane.filter(display_order__gt=original_display_order, display_order__lte=self.display_order):
                         card.display_order -= 1
                         card.save()
+            else:
+                cards_in_lane = Card.objects.filter(lane=self.lane, display_order__gte=self.display_order)
+                for i, card in enumerate(cards_in_lane):
+                    if i!=0:
+                        print(card.display_order, "jjj")
+                        card.display_order+=1
+                        card.save()
         super().save(*args, **kwargs)
     
     @property

@@ -7,7 +7,7 @@ class IsAdminUser(permissions.BasePermission):
 	message = 'Permission Denied for current user'
 	def has_permission(self, request, view):
 		user = get_object_or_404(User, id = request.user.id)
-		if user.is_active and user.is_staff:
+		if user.is_active:
 			return True
 		return False
 
@@ -15,9 +15,8 @@ class IsAdminUser(permissions.BasePermission):
 class IsBoardOwner(permissions.BasePermission):
     message = "You are not allowed to do current action"
     def has_permission(self, request, view):
-        user = get_object_or_404(KanBanBoard, id=request.user.id)
-        if user:
-            if user.user.id:
-                return True
+        kanban_obj = get_object_or_404(KanBanBoard, id=view.kwargs.get("pk"))
+        if kanban_obj.user.id == request.user.id:
+            return True
         else:
             return False

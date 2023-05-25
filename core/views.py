@@ -23,14 +23,11 @@ User = get_user_model()
 
 class BoardView(viewsets.ModelViewSet):
     serializer_class =  BoardSerializer
-    permission_classes = (IsAuthenticated,)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['name']
 
     def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
+        #Instantiates and returns the list of permissions that this view requires.
         if self.action == 'list' or self.action == 'create' or self.action == 'retrieve':
             permission_classes = [IsAuthenticated, IsAdminUser]
         else:
@@ -158,9 +155,7 @@ class LaneView(viewsets.ModelViewSet):
     filterset_fields = ['name', 'display_order']
     
     def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
+        #Instantiates and returns the list of permissions that this view requires.
         if self.action == 'list' or self.action == 'create' or self.action == 'retrieve':
             permission_classes = [IsAuthenticated, IsAdminUser]
         else:
@@ -182,11 +177,7 @@ class LaneView(viewsets.ModelViewSet):
  
  
 class CardView(viewsets.ModelViewSet):
-    """
-    Only Authenticated user can access this View.
     
-    **
-    """
     serializer_class =  CardSerializers
     queryset = Card.objects.all()
     filter_backends = [DjangoFilterBackend]
