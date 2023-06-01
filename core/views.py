@@ -38,23 +38,38 @@ class BoardView(viewsets.ModelViewSet):
 	    return KanBanBoard.objects.filter(board_member__id = self.request.user.id)
  
     def retrieve(self, request, *args, **kwargs):
-        board = KanBanBoard.objects.get(id = kwargs.get("pk"))
-        board_serializer=BoardSerializer(board)
-        board_serializer_data=board_serializer.data.copy()
-        board_serializer_data['board_members']=board.get_board_member_list
-        # board_data = {}
-        # board_data["id"] = board.id
-        # board_data["name"] = board.name
-        # board_data["user_id"] = board.user.id
-        # board_data["board_member"] = board.get_board_member_list
-        # board_data["created_at"] = board.created_at
-        lane = Lane.objects.filter(board__id = kwargs.get("pk")).values()
-        cards = Card.objects.filter(lane__board__id = kwargs.get("pk")).values()
-        tags = Tags.objects.filter(board__id = kwargs.get("pk")).values()
-        board_serializer_data["lane"]=list(lane)
-        board_serializer_data["cards"]=list(cards)
-        board_serializer_data["tags"]=list(tags)
-        return Response(board_serializer_data)
+        try:
+            board = KanBanBoard.objects.get(id = kwargs.get("pk"))
+            board_serializer=BoardSerializer(board)
+            board_serializer_data=board_serializer.data.copy()
+            board_serializer_data['board_members']=board.get_board_member_list
+            # board_data = {}
+            # board_data["id"] = board.id
+            # board_data["name"] = board.name
+            # board_data["user_id"] = board.user.id
+            # board_data["board_member"] = board.get_board_member_list
+            # board_data["created_at"] = board.created_at
+            lane = Lane.objects.filter(board__id = kwargs.get("pk")).values()
+            card_list = []
+            for data in lane:
+                lane_data = {}
+                lane_id = data.get("id")
+                obj = get_object_or_404(Lane, id=lane_id)
+                lane_serializer = LaneSerializer(obj)
+                lane_serializer_data = lane_serializer.data.copy()
+                cards_ = obj.get_card_related_to_lane
+                lane_serializer_data["cards"] = cards_
+                lane_data["lane"] = lane_serializer_data
+                card_list.append(lane_data)
+                
+            # cards = Card.objects.filter(lane__board__id = kwargs.get("pk")).values()
+            tags = Tags.objects.filter(board__id = kwargs.get("pk")).values()
+            board_serializer_data["lanes"]=card_list
+            # board_serializer_data["cards"]=list(cards)
+            board_serializer_data["tags"]=list(tags)
+            return Response(board_serializer_data)
+        except Exception as e:
+            return Response({"error":str(e)})
 
  
 class InviteMember(APIView):
@@ -105,7 +120,7 @@ class RemoveMember(APIView):
                 board_id = kwargs.get("pk")
                 board_obj = KanBanBoard.objects.get(id=board_id)
                 board_obj.board_member.remove(*users)
-                return Response(data=f"{email} member removed", status=status.HTTP_200_OK)
+                return Response(data=f"{email} removed", status=status.HTTP_200_OK)
             else:
                 return Response(data=f"No users found with {email}", status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -211,6 +226,7 @@ class CardView(viewsets.ModelViewSet):
         data["card"] = card_detail
         data["comment"] = list(comment)
         return Response(data)
+    
         
 
 class CommentView(viewsets.ModelViewSet):

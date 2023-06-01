@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 from .views import home_page
+from rest_framework.documentation import include_docs_urls
 
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -46,4 +47,5 @@ urlpatterns = [
     path('', include('users.urls')),
     path('', home_page, name="home"),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('docs/', include_docs_urls(title=API_TITLE,description=API_DESCRIPTION)),
 ]

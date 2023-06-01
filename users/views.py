@@ -1,6 +1,6 @@
 from .serializers import *
 from rest_framework import generics
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -35,3 +35,4 @@ class SessionLoginView(generics.CreateAPIView):
         login(request, serializer.validated_data['user'])
 
         return Response({'message': 'Logged in'})
+

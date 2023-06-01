@@ -26,11 +26,11 @@ class TagSerializer(serializers.ModelSerializer):
     board = serializers.PrimaryKeyRelatedField(queryset=KanBanBoard.objects.all())
     created_at  = serializers.DateTimeField(read_only = True)
 
-    def __init__(self, *args, **kwargs):
-        user_id = kwargs["context"]["request"].user.id
-        super().__init__(*args, **kwargs)
-        if user_id is not None:
-            self.board = serializers.PrimaryKeyRelatedField(queryset=KanBanBoard.objects.filter(user__id=user_id))
+    # def __init__(self, *args, **kwargs):
+    #     user_id = kwargs["context"]["request"].user.id
+    #     super().__init__(*args, **kwargs)
+    #     if user_id is not None:
+    #         self.board = serializers.PrimaryKeyRelatedField(queryset=KanBanBoard.objects.filter(user__id=user_id))
             
     class Meta:
         model= Tags
@@ -58,8 +58,20 @@ class CardSerializers(serializers.ModelSerializer):
         return fields
     
     def validate(self, attr):
-        if not Card.objects.filter(lane__board__board_member__id = self.context["request"].user.id):
-            raise AuthenticationFailed("You are not allowed to create data on this board.")
+        if self.context["view"].action == 'update':
+            original_card = Card.objects.get(pk=self.context["view"].kwargs.get("pk"))
+            original_lane_display_order = original_card.lane.display_order
+            requested_lane = Lane.objects.get(id=attr.get("lane").id)
+            requested_lane_display_order = requested_lane.display_order
+            #cannot change card to different lane by skipping a status.
+            if requested_lane_display_order!=original_lane_display_order:
+                if original_lane_display_order+1 == requested_lane_display_order or requested_lane_display_order<original_lane_display_order:
+                    pass    
+                else:
+                    raise serializers.ValidationError("Card Cannot be skipped!")
+        if Card.objects.last():
+            if not Card.objects.filter(lane__board__board_member__id = self.context["request"].user.id):
+                raise AuthenticationFailed("You are not allowed to create data on this board.")
         return super().validate(attr)
     
     def create(self, validated_data):
@@ -79,8 +91,9 @@ class LaneSerializer(serializers.ModelSerializer):
         fields = ["id", "name","board", "display_order", "created_at"]
         
     def validate(self, attr):
-        if not Lane.objects.filter(board__board_member__id = self.context["request"].user.id).exists():
-            raise AuthenticationFailed("You are not allowed to do action in this board")
+        if Lane.objects.last():
+            if not Lane.objects.filter(board__board_member__id = self.context["request"].user.id).exists():
+                raise AuthenticationFailed("You are not allowed to do action in this board")
         return super().validate(attr)
         
     def create(self, validate_data):
