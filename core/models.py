@@ -87,17 +87,27 @@ class Card(models.Model):
             # Existing card
             original_card = Card.objects.get(pk=self.pk)
             original_display_order = original_card.display_order
+            # breakpoint()
             if original_display_order != self.display_order:
                 # Card's display_order has changed
                 cards_in_lane = Card.objects.filter(lane=self.lane).order_by("display_order")
                 if self.display_order < original_display_order:
                     # Moving the card towards the beginning of the lane
-                    for card in cards_in_lane.filter(display_order__gte=self.display_order, display_order__lt=original_display_order):
-                        Card.objects.filter(id=card.id).update(display_order=card.display_order+1)
+                    for i, card in enumerate(cards_in_lane.filter(display_order__gte=self.display_order, display_order__lt=original_display_order)):
+                        print(card.display_order, "if condition")
+                        if i == 0:
+                            i=1
+                        else:
+                            i+=1
+                        Card.objects.filter(id=card.id).update(display_order=self.display_order+i)
                 else:
                     # Moving the card towards the end of the lane
-                    for card in cards_in_lane.filter(display_order__gt=original_display_order, display_order__lte=self.display_order):
-                        Card.objects.filter(id=card.id).update(display_order=card.display_order-1)
+                    for i, card in enumerate(cards_in_lane.filter(display_order__gt=original_display_order, display_order__lte=self.display_order)):
+                        if i == 0:
+                            i=1
+                        else:
+                            i+=1
+                        Card.objects.filter(id=card.id).update(display_order=self.display_order-i)
             else:
                 cards_in_lane = Card.objects.filter(lane=self.lane, display_order__gte=self.display_order)
                 for i, card in enumerate(cards_in_lane):
